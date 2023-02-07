@@ -12,16 +12,8 @@ const SplashScreen = () => {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
 
-      //   if(user.displayName !== null){
-      //     navigation.replace('Profile');
-      //   }else if (user){
-      //     navigation.replace('Profile')
-      //   }       
-      // // }else{
-      // //   navigation.replace('Walkthrough')
-      // //   console.log(user)
-
-      if(user){      
+      if(user){   
+        console.log(user.phoneNumber)   
         if(user.displayName === null){
           navigation.replace("Profile")
         }else{

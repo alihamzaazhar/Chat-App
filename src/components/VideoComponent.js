@@ -29,7 +29,6 @@ const VideoComponent = () => {
           maxDuration: 60,
           quality: Camera.Constants.VideoQuality["1080"],
         });
-        console.log(videoRecords.uri);
         setVideo(videoRecords.uri);
       } catch (e) {
         console.log(e);
@@ -46,10 +45,11 @@ const VideoComponent = () => {
   const saveVideo = () => {
     if (video) {
       try {
-        MediaLibrary.createAssetAsync(video);
-        Alert.alert("Video Saved!");
+        // MediaLibrary.createAssetAsync(video);
+        // Alert.alert("Video Saved!");
         navigation.navigate("UploadStatusScreen", {
-          videoURI: video
+          videoURI: video,
+          type: "video"
         })
         setVideo(null);
       } catch (e) {

@@ -8,7 +8,6 @@ import { useNavigation } from "@react-navigation/native";
 
 const Tab = createBottomTabNavigator();
 const BottomTabNavigation = () => {
-
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({

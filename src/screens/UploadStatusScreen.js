@@ -11,28 +11,152 @@ import {
 import React, { useState, useEffect } from "react";
 import { useNavigation } from "@react-navigation/native";
 import { Video } from "expo-av";
-
+import { app, db } from "../firebase/Config";
+import { getAuth } from "firebase/auth/react-native";
+import { addDoc, collection, doc, serverTimestamp } from "firebase/firestore";
+import {
+  getStorage,
+  ref,
+  uploadBytesResumable,
+  getDownloadURL,
+} from "firebase/storage";
 const UploadStatusScreen = (props) => {
   const navigation = useNavigation();
-  const [caption, setCaption] = useState('')
+  const [caption, setCaption] = useState("");
+  const [image, setImage] = useState('')
+  const [video, setVideo] = useState('')
+  const [uploading, setUploading] = useState(0)
+  const auth = getAuth(app);
+  const storage = getStorage(app);
+
+
+  useEffect(() => {
+    if(props.route.params.videoURI){
+      setVideo(props.route.params.videoURI)
+    }
+    if(props.route.params.imageURI){
+      setImage(props.route.params.imageURI)
+    }
+  }, []);
+
+
+  const uploadingContent = image || video
+
+  const uploadStory = async () => {
+    const blobImage = await new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.onload = function () {
+        resolve(xhr.response);
+      };
+      xhr.onerror = function () {
+        reject(new TypeError("Network Request Failed"));
+      };
+      xhr.responseType = "blob";
+      xhr.open("GET", uploadingContent, true);
+      xhr.send(null);
+    });
+
+    let metadata = {}
+    if(image){
+      metadata.contentType =  "image/jpg"
+    }
+    else if(video){    
+        metadata.contentType = "video/mp4"     
+    }
+    
+    const storageRef = ref(
+      storage,
+      "status/" + auth.currentUser.displayName + '_' +(Math.floor(Math.random() * 100000))
+    );
+    const uploadTask = uploadBytesResumable(storageRef, blobImage, metadata);
+    uploadTask.on(
+      "state_changed",
+      (snapshot) => {
+        const progress =
+          (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+        console.log("Upload is " + progress + "% done");
+        setUploading(progress)
+        switch (snapshot.state) {
+          case "paused":
+            console.log("Upload is paused");
+            break;
+          case "running":
+            console.log("Upload is running");
+            break;
+        }
+      },
+      (error) => {
+        switch (error.code) {
+          case "storage/unauthorized":
+            break;
+          case "storage/canceled":
+            break;
+          case "storage/unknown":
+            break;
+        }
+      },
+      () => {
+        getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
+          console.log("File available at", downloadURL);
+          if(downloadURL){
+            storyData()
+            navigation.navigate("BottomTab", {
+              screen: "AllChat",
+              params: {
+                Caption: caption ? caption : "",
+                uri:props.route.params.imageURI || props.route.params.videoURI,
+                contentType: props.route.params.type,
+                userID: auth.currentUser.uid,
+                storyCreationTime: serverTimestamp()
+              },
+            })
+          }
+          
+        });
+      }
+    );
+  };
+
+  const storyData = async () => {
+    try{
+      const userRef =  doc(db, "Users", auth.currentUser.uid)
+      const userStatusRef = await addDoc(collection(userRef, "statuses"), {
+        caption: caption ? caption : "",
+        uri: props.route.params.imageURI || props.route.params.videoURI,
+        contentType: props.route.params.type,
+        userID: auth.currentUser.uid,
+        userName: auth.currentUser.displayName,
+        createdAt: serverTimestamp()
+      });
+      console.log("Document written with ID: ", userStatusRef.id);
+    }catch(e){
+        console.log(e)
+    }
+  };
+
   return (
     <View style={styles.SafeAreaView}>
       <View style={styles.container}>
-        {props.route.params.imageURI !== null ? (
+        {props.route.params.imageURI ? (
           <View style={styles.contentContainer}>
             <Image
               source={{ uri: props.route.params.imageURI }}
               style={styles.Image}
             />
           </View>
-        ) : (
+        ) : props.route.params.videoURI ? (
           <View style={styles.contentContainer}>
             <Video
               source={{ uri: props.route.params.videoURI }}
               style={styles.Video}
               resizeMode="cover"
               isLooping
+              useNativeControls
             />
+          </View>
+        ) : (
+          <View>
+            <Text>No image or video found</Text>
           </View>
         )}
 
@@ -43,10 +167,18 @@ const UploadStatusScreen = (props) => {
               placeholderTextColor={"#F1F1F1"}
               style={styles.TextInput}
               multiline={true}
+              value={caption}
+              onChangeText={(text) => {
+                setCaption(text);
+              }}
             />
           </View>
           <View style={styles.sendIconContainer}>
-            <TouchableOpacity onPress={()=> {navigation.navigate("BottomTab")}}>
+            <TouchableOpacity
+              onPress={() => {
+                uploadStory()
+              }}
+            >
               <Image
                 source={require("../../assets/send.png")}
                 style={styles.sendIcon}
@@ -76,6 +208,7 @@ const styles = StyleSheet.create({
   },
   Video: {
     flex: 1,
+    alignSelf: "stretch",
   },
   contentContainer: {
     height: "90%",

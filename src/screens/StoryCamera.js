@@ -8,8 +8,9 @@ import {
 import React, { useState } from "react";
 import PhotoComponent from "../components/PhotoComponent";
 import VideoComponent from "../components/VideoComponent";
-const StoryCamera = () => {
+const StoryCamera = (props) => {
   const [selected, setSelected] = useState("photo");
+  console.log(props.route.params)
 
   // const DESIRED_RATIO = '51:23';
   // const prepareRatio = async () => {

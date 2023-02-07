@@ -24,6 +24,7 @@ const PhotoComponent = () => {
   const [cameraRoll, setCameraRoll] = useState([]);
   const cameraRef = useRef(null);
   const navigation = useNavigation()
+
   useEffect(() => {
     (async () => {
       MediaLibrary.requestPermissionsAsync();
@@ -71,10 +72,11 @@ const PhotoComponent = () => {
   const saveImage = async () => {
     if (image) {
       try {
-        await MediaLibrary.createAssetAsync(image);
-        Alert.alert("Picture Saved!");
+        // await MediaLibrary.createAssetAsync(image);
+        // Alert.alert("Picture Saved!");
         navigation.navigate("UploadStatusScreen", {
-          imageURI: image
+          imageURI: image,
+          type: "image",
         })
         setImage(null);
         (async () => {

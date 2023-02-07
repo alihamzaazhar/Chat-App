@@ -28,16 +28,14 @@ const NavigationComponent = () => {
   return ( 
   <NavigationContainer>
     <Stack.Navigator screenOptions={{ headerShown: false }} >
-    {/* {showSplashScreen ? (
+    {showSplashScreen ? (
           <Stack.Screen name="SplashScreen" component={SplashScreen}  />
         ) : null}
       <Stack.Screen name="Walkthrough" component={Walkthrough} />  
       <Stack.Screen name="VerificationScreen" component={VerificationScreen} />
       <Stack.Screen name="VerificationCodeScreen" component={VerificationCodeScreen} />
-      <Stack.Screen name="Profile" component={Profile} /> */}
+      <Stack.Screen name="Profile" component={Profile} />
       <Stack.Screen name="BottomTab" component={BottomTabNavigation} />
-      <Stack.Screen name="Contacts" component={Contacts} />
-      <Stack.Screen name="AllChat" component={AllChat} />
       <Stack.Screen name="StoryCamera" component={StoryCamera}/>
       <Stack.Screen name="UploadStatusScreen" component={UploadStatusScreen} />
     </Stack.Navigator>

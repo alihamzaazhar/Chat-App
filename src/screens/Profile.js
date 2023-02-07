@@ -18,7 +18,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import * as ImagePicker from "expo-image-picker";
 import { app, db } from "../firebase/Config";
 import { getAuth, updateProfile } from "firebase/auth";
-import { addDoc, serverTimestamp, collection } from "firebase/firestore";
+import { addDoc, serverTimestamp, collection, doc, setDoc } from "firebase/firestore";
 import { useNavigation } from "@react-navigation/native";
 import {
   getStorage,
@@ -156,12 +156,11 @@ const Profile = (props) => {
 
   const setUserData = async () => {
     try {
-      const res = await addDoc(collection(db, "Users"), {
+      await setDoc(doc(db, "Users", auth.currentUser.uid), {
         name: firstName + (lastName ? " " + lastName : ""),
         mobile: phoneNumber,
         profileImage: image,
-      });
-      console.log("Document written with ID: ", res.id);
+    });
     } catch (e) {
       console.log(e);
     }
