@@ -13,11 +13,13 @@ import * as Contact from "expo-contacts";
 import { app, db } from "../firebase/Config";
 import { getAuth } from "firebase/auth";
 import { collection, getDocs, onSnapshot } from "firebase/firestore";
+import { useNavigation } from "@react-navigation/native";
 const Contacts = () => {
   const [phoneContacts, setPhoneContacts] = useState([]);
   const [contacts, setContacts] = useState([]);
   const [data, setData] = useState([]);
   const auth = getAuth(app);
+  const navigation = useNavigation()
 
   const getUsersData = async () => {
     try {
@@ -32,6 +34,7 @@ const Contacts = () => {
                 username: firestoreContacts.name,
                 phoneNumber: firestoreContacts.mobile,
                 profile: firestoreContacts.profileImage,
+                uid: doc.id
               });
             }
           });
@@ -85,6 +88,14 @@ const Contacts = () => {
     })();
   }, []);
 
+  const startChat = ({item}) => {
+    navigation.navigate("ChatScreen", {
+      username: item.username,
+      profileImage: item.profile,
+      phoneNumber: item.phoneNumber,
+      userID: item.uid
+    })
+  }
   return (
     <View style={styles.SafeAreaView}>
       <View style={styles.header}>
@@ -115,19 +126,21 @@ const Contacts = () => {
           data={contacts}
           keyExtractor={(item, index) => index.toString()}
           renderItem={({ item }) => (
+            <TouchableOpacity onPress={()=> {startChat({item})}}>
             <View style={styles.flatlistContainer}>
               <Image source={{uri : item.profile}} style={styles.img_contacts} />
               <View style={styles.usernameContainer}>
               <Text style={styles.username}>
-                {item.username
-                  .split(" ")
-                  .map((word) => 
-                      (word[0] === word[0].toUpperCase()) ? word : word[0].toUpperCase() + word.slice(1))
-                  .join(" ")}
+                {item.username}
+                  {/* // .split(" ")
+                  // .map((word) => 
+                  //     (word[0] === word[0].toUpperCase()) ? word : word[0].toUpperCase() + word.slice(1))
+                  // .join(" ")} */}
               </Text>
               <Text style={styles.phoneNumber}>{item.phoneNumber}</Text>
               </View>
             </View>
+            </TouchableOpacity>
           )}
         />
       </View>

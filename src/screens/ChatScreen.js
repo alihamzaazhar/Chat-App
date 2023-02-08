@@ -10,10 +10,120 @@ import {
   TouchableOpacity,
   FlatList,
 } from "react-native";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { app, db } from "../firebase/Config";
+import { getAuth } from "firebase/auth";
+import {
+  addDoc,
+  collection,
+  getDocs,
+  onSnapshot,
+  orderBy,
+  query,
+  serverTimestamp,
+  where,
+} from "firebase/firestore";
+import { useNavigation } from "@react-navigation/native";
 
-const ChatScreen = () => {
+const ChatScreen = (props) => {
   const [message, setMessage] = useState(null);
+  const [data, setData] = useState([]);
+  const auth = getAuth(app);
+  const navigation = useNavigation()
+
+  // console.log(props.route.params)
+
+  useEffect(() => {
+    getMsg();
+  }, []);
+
+  const sendingMsg = async () => {
+    const querySnapshot = await getDocs(collection(db, "Chats"));
+    querySnapshot.forEach(async (doc) => {
+      const chatsRef = collection(db, "Chats", doc.id, "messages");
+      if (message) {
+        try {
+          const msgRef = await addDoc(chatsRef, {
+            sender_id: auth.currentUser.uid,
+            sender_name: auth.currentUser.displayName,
+            textmessage: message,
+            time: serverTimestamp(),
+            reciever_id: props.route.params.userID,
+          });
+          console.log(msgRef.id);
+        } catch (e) {
+          console.log(e);
+        }
+      }
+      setMessage(null);
+    });
+  };
+
+  const sendMsg = async () => {
+    const querySnapshot = await getDocs(collection(db, "Chats"));
+    if (querySnapshot.docs.length === 0) {
+      try {
+        const ref = await addDoc(collection(db, "Chats"), {
+          contact1_uid: auth.currentUser.uid,
+          contact1_name: auth.currentUser.displayName,
+          contact1_avatar: auth.currentUser.photoURL,
+          contact1_phoneNumber: auth.currentUser.phoneNumber,
+          contact2_uid: props.route.params.userID,
+          contact2_name: props.route.params.username,
+          contact2_avatar: props.route.params.profileImage,
+          contact2_phoneNumber: props.route.params.phoneNumber,
+        });
+        console.log(ref.id);
+        sendingMsg();
+      } catch (e) {
+        console.log(e);
+      }
+    } else {
+      sendingMsg();
+    }
+  };
+
+  const getMsg = async () => {
+    const q = query(
+      collection(db, "Chats"),
+      where("contact2_uid", "==", props.route.params.userID)
+    );
+    const querySnap = await getDocs(q);
+      const data = [];
+      querySnap.forEach((doc) => {
+        data.push(doc.data());
+      });
+      if (data.length === 0) {
+        try {
+          const ref = await addDoc(collection(db, "Chats"), {
+            contact1_uid: auth.currentUser.uid,
+            contact1_name: auth.currentUser.displayName,
+            contact1_avatar: auth.currentUser.photoURL,
+            contact1_phoneNumber: auth.currentUser.phoneNumber,
+            contact2_uid: props.route.params.userID,
+            contact2_name: props.route.params.username,
+            contact2_avatar: props.route.params.profileImage,
+            contact2_phoneNumber: props.route.params.phoneNumber,
+          });
+          console.log(ref.id);
+          sendingMsg();
+        } catch (e) {
+          console.log(e);
+        }
+      }
+    const querySnapshot = await getDocs(collection(db, "Chats"));
+    querySnapshot.forEach(async (doc) => {
+      const chatsRef = collection(db, "Chats", doc.id, "messages");
+      const q = query(chatsRef, orderBy("time", "desc"));
+      const unsub = onSnapshot(q, (querySnapshot) => {
+        const chat = [];
+        querySnapshot.forEach((doc) => {
+          chat.push(doc.data());
+        });
+        setData(chat);
+      });
+    });
+  };
 
   const DATA1 = [
     {
@@ -65,31 +175,36 @@ const ChatScreen = () => {
     <SafeAreaView style={styles.SafeAreaView}>
       <View style={styles.header}>
         <View style={styles.headerbtnContainer}>
-          <TouchableOpacity>
+          <TouchableOpacity onPress={()=> navigation.goBack()}>
             <Image
               source={require("../../assets/Vector.png")}
               style={styles.headerImg}
             />
           </TouchableOpacity>
         </View>
-        <Text style={styles.titleText}>Chat Room</Text>
+        <Text style={styles.titleText}>{props.route.params.username}</Text>
       </View>
       <View style={styles.container}>
         <KeyboardAvoidingView style={styles.chatContainer}>
           <FlatList
-            data={DATA1}
+            data={data}
+            inverted
             keyExtractor={(item, index) => {
-              index.toString();
+              return index.toString();
             }}
-            showsVerticalScrollIndicator = {false}
+            showsVerticalScrollIndicator={false}
             renderItem={({ item }) => {
-              return item.sendername !== "you" ? (
+              return item.sender_id !== auth.currentUser.uid ? (
                 <View style={styles.otherMessage}>
-                  <Text style={styles.otherMessageText}>{item.message}</Text>
+                  <Text style={styles.otherMessageText}>
+                    {item.textmessage}
+                  </Text>
+                  <Text style={styles.reciever_time}>{item.time.toDate().toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit'})}</Text>
                 </View>
               ) : (
                 <View style={styles.myMessage}>
-                  <Text style={styles.myMessageText}>{item.message}</Text>
+                  <Text style={styles.myMessageText}>{item.textmessage}</Text>
+                  <Text style={styles.reciever_time}>{item.time.toDate().toLocaleTimeString('en-US', {hour: "numeric", minute: "numeric"})}</Text>
                 </View>
               );
             }}
@@ -109,12 +224,17 @@ const ChatScreen = () => {
           placeholderTextColor={"white"}
           style={styles.TextInput}
           value={message}
-          onChange={(msg) => {
+          onChangeText={(msg) => {
             setMessage(msg);
           }}
           numberOfLines={10}
         />
-        <TouchableOpacity style={styles.imgContainer}>
+        <TouchableOpacity
+          style={styles.imgContainer}
+          onPress={() => {
+            sendMsg();
+          }}
+        >
           <Image
             source={require("../../assets/sendmessage.png")}
             style={[styles.img, { marginHorizontal: "2%" }]}
@@ -187,7 +307,7 @@ const styles = StyleSheet.create({
   },
   myMessage: {
     alignSelf: "flex-end",
-    height: 35,
+    height: 50,
     backgroundColor: "#375FFF",
     paddingHorizontal: "5%",
     paddingTop: 5,
@@ -206,8 +326,7 @@ const styles = StyleSheet.create({
     fontFamily: "sans-serif",
   },
   otherMessage: {
-    height: 35,
-    paddingHorizontal: "5%",
+    height: 50,
     paddingTop: 5,
     backgroundColor: "#1B2B48",
     alignSelf: "flex-start",
@@ -215,6 +334,8 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 10,
     borderBottomRightRadius: 10,
     marginTop: 5,
+    paddingLeft: "2%",
+    paddingRight: "5%"
   },
   otherMessageText: {
     color: "#F7F7FC",
@@ -225,4 +346,13 @@ const styles = StyleSheet.create({
     fontWeight: "normal",
     fontFamily: "sans-serif",
   },
+  reciever_time: {
+    color: "#ADB5BD",
+    textAlign: "left",
+    verticalAlign: "top",
+    lineHeight: 16,
+    fontSize: 10,
+    fontWeight: "normal",
+    fontFamily: "sans-serif",
+  }
 });

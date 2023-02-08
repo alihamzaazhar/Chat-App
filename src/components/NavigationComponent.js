@@ -13,6 +13,7 @@ import AllChat from "../screens/AllChat";
 import Contacts from '../screens/Contacts'
 import StoryCamera from "../screens/StoryCamera";
 import UploadStatusScreen from "../screens/UploadStatusScreen";
+import ChatScreen from "../screens/ChatScreen";
 
 const Stack = createNativeStackNavigator();
 
@@ -38,6 +39,7 @@ const NavigationComponent = () => {
       <Stack.Screen name="BottomTab" component={BottomTabNavigation} />
       <Stack.Screen name="StoryCamera" component={StoryCamera}/>
       <Stack.Screen name="UploadStatusScreen" component={UploadStatusScreen} />
+      <Stack.Screen name="ChatScreen" component={ChatScreen} />
     </Stack.Navigator>
   </NavigationContainer>
   )
