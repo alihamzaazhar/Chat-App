@@ -29,7 +29,7 @@ const ChatScreen = (props) => {
   const [message, setMessage] = useState(null);
   const [data, setData] = useState([]);
   const auth = getAuth(app);
-  const navigation = useNavigation()
+  const navigation = useNavigation();
 
   // console.log(props.route.params)
 
@@ -37,26 +37,33 @@ const ChatScreen = (props) => {
     getMsg();
   }, []);
 
+  useEffect(() => {
+    if(message){
+      getMsg();
+    }
+  }, []);
+
   const sendingMsg = async () => {
     const querySnapshot = await getDocs(collection(db, "Chats"));
     querySnapshot.forEach(async (doc) => {
-      const chatsRef = collection(db, "Chats", doc.id, "messages");
-      if (message) {
-        try {
-          const msgRef = await addDoc(chatsRef, {
-            sender_id: auth.currentUser.uid,
-            sender_name: auth.currentUser.displayName,
-            textmessage: message,
-            time: serverTimestamp(),
-            reciever_id: props.route.params.userID,
-          });
-          console.log(msgRef.id);
-        } catch (e) {
-          console.log(e);
+        const chatsRef = collection(db, "Chats", doc.id, "messages");
+        if (message) {
+          try {
+            const msgRef = await addDoc(chatsRef, {
+              sender_id: auth.currentUser.uid,
+              sender_name: auth.currentUser.displayName,
+              textmessage: message,
+              time: serverTimestamp(),
+              reciever_id: props.route.params.userID,
+            });
+            console.log(msgRef.id, "send msg");
+            getMsg()
+          } catch (e) {
+            console.log(e);
+          }
         }
-      }
-      setMessage(null);
-    });
+        setMessage(null);
+      })
   };
 
   const sendMsg = async () => {
@@ -73,15 +80,15 @@ const ChatScreen = (props) => {
           contact2_avatar: props.route.params.profileImage,
           contact2_phoneNumber: props.route.params.phoneNumber,
         });
-        console.log(ref.id);
+        console.log(ref.id, "When new Chat start");
         sendingMsg();
       } catch (e) {
         console.log(e);
       }
-    } else {
+    }else{
       sendingMsg();
     }
-  };
+  }
 
   const getMsg = async () => {
     const q = query(
@@ -89,28 +96,30 @@ const ChatScreen = (props) => {
       where("contact2_uid", "==", props.route.params.userID)
     );
     const querySnap = await getDocs(q);
-      const data = [];
-      querySnap.forEach((doc) => {
-        data.push(doc.data());
-      });
-      if (data.length === 0) {
-        try {
-          const ref = await addDoc(collection(db, "Chats"), {
-            contact1_uid: auth.currentUser.uid,
-            contact1_name: auth.currentUser.displayName,
-            contact1_avatar: auth.currentUser.photoURL,
-            contact1_phoneNumber: auth.currentUser.phoneNumber,
-            contact2_uid: props.route.params.userID,
-            contact2_name: props.route.params.username,
-            contact2_avatar: props.route.params.profileImage,
-            contact2_phoneNumber: props.route.params.phoneNumber,
-          });
-          console.log(ref.id);
-          sendingMsg();
-        } catch (e) {
-          console.log(e);
-        }
-      }
+    const data = [];
+    querySnap.forEach((doc) => {
+      data.push(doc.data());
+    });
+    if (data.length === 0) {
+      // try {
+      //   if (message) {
+      //     const ref = await addDoc(collection(db, "Chats"), {
+      //       contact1_uid: auth.currentUser.uid,
+      //       contact1_name: auth.currentUser.displayName,
+      //       contact1_avatar: auth.currentUser.photoURL,
+      //       contact1_phoneNumber: auth.currentUser.phoneNumber,
+      //       contact2_uid: props.route.params.userID,
+      //       contact2_name: props.route.params.username,
+      //       contact2_avatar: props.route.params.profileImage,
+      //       contact2_phoneNumber: props.route.params.phoneNumber,
+      //     });
+      //     console.log(ref.id);
+      //   }
+      // } catch (e) {
+      //   console.log(e);
+      // }      
+
+    }
     const querySnapshot = await getDocs(collection(db, "Chats"));
     querySnapshot.forEach(async (doc) => {
       const chatsRef = collection(db, "Chats", doc.id, "messages");
@@ -175,7 +184,7 @@ const ChatScreen = (props) => {
     <SafeAreaView style={styles.SafeAreaView}>
       <View style={styles.header}>
         <View style={styles.headerbtnContainer}>
-          <TouchableOpacity onPress={()=> navigation.goBack()}>
+          <TouchableOpacity onPress={() => navigation.goBack()}>
             <Image
               source={require("../../assets/Vector.png")}
               style={styles.headerImg}
@@ -199,12 +208,28 @@ const ChatScreen = (props) => {
                   <Text style={styles.otherMessageText}>
                     {item.textmessage}
                   </Text>
-                  <Text style={styles.reciever_time}>{item.time.toDate().toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit'})}</Text>
+                  <Text style={styles.reciever_time}>
+                    {item.time
+                      .toDate()
+                      .toLocaleTimeString("en-US", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                  </Text>
                 </View>
               ) : (
                 <View style={styles.myMessage}>
                   <Text style={styles.myMessageText}>{item.textmessage}</Text>
-                  <Text style={styles.reciever_time}>{item.time.toDate().toLocaleTimeString('en-US', {hour: "numeric", minute: "numeric"})}</Text>
+                  <Text style={styles.reciever_time}>
+                    {item.time
+                      ? item.time
+                          .toDate()
+                          .toLocaleTimeString("en-US", {
+                            hour: "numeric",
+                            minute: "numeric",
+                          })
+                      : null}
+                  </Text>
                 </View>
               );
             }}
@@ -335,7 +360,7 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 10,
     marginTop: 5,
     paddingLeft: "2%",
-    paddingRight: "5%"
+    paddingRight: "5%",
   },
   otherMessageText: {
     color: "#F7F7FC",
@@ -354,5 +379,5 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: "normal",
     fontFamily: "sans-serif",
-  }
+  },
 });

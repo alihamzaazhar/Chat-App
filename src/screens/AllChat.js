@@ -21,12 +21,14 @@ import {
 import { useEffect, useState } from "react";
 import { useNavigation } from "@react-navigation/native";
 import ViewStoryComponent from '../components/ViewStoryComponent'
+import { FlatList } from "react-native-gesture-handler";
 const AllChat = (props) => {
   const auth = getAuth(app);
   const [data, setData] = useState([]);
   const navigation = useNavigation();
   const [propsData, setPropsData] = useState(null);
   const [currentUserData, setCurrentUserData] = useState([]);
+  const [chatData, setChatData] = useState([])
 
   useEffect(() => {
     (async () => {
@@ -109,7 +111,31 @@ const AllChat = (props) => {
       }
     });
   };
+useEffect(() => {
+  getChats()
+}, []);
+  const getChats = async() => {
+    const chatsref = await getDocs(collection(db, "Chats"))
+    chatsref.forEach((doc)=> {
+      const allData = []
+        allData.push({
+          reciever_id: doc.data().contact1_uid,
+          reciever_name: doc.data().contact1_name,
+          reciever_phoneNumber: doc.data().contact1_phoneNumber,
+          reciever_image: doc.data().contact1_avatar
+        })
+      setChatData(allData)
+    })
+  }
 
+  const startChat = ({item}) => {
+    navigation.navigate("ChatScreen", {
+      username: item.reciever_name,
+      profileImage: item.reciever_image,
+      phoneNumber: item.reciever_phoneNumber,
+      userID: item.reciever_id
+    })
+  }
   return (
     <View style={styles.SafeAreaView}>
       <View style={styles.header}>
@@ -175,6 +201,27 @@ const AllChat = (props) => {
           />
         </View>
         <View style={styles.chatContainer}>
+          <FlatList data={chatData}
+          keyExtractor={(item, index) =>  {
+            return index.toString()
+          }}
+          renderItem = {({item, index})=> {
+            return(
+              <TouchableOpacity onPress={()=> {startChat({item})}}>
+            <View style={styles.flatlistContainer}>
+              <Image source={{uri : item.reciever_image}} style={styles.img_contacts} />
+              <View style={styles.usernameContainer}>
+              <Text style={styles.username}>
+                {item.reciever_name}
+              </Text>
+              <Text style={styles.phoneNumber}>{item.reciever_phoneNumber}</Text>
+              </View>
+            </View>
+            </TouchableOpacity>
+            )
+          }}
+          
+          />
         </View>
       </View>
     </View>
@@ -257,4 +304,36 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     color: "#F7F7FC",
   },
+  username: {
+    color: "#F7F7FC",
+    fontSize: 14,
+    textAlign: "left",
+    textAlignVertical: "center",
+    fontWeight: "normal",
+    fontFamily: "sans-serif"
+  },
+  flatlistContainer: {
+    flexDirection: "row",
+    height: 58,
+    marginVertical: 20,
+  },
+  img_contacts: {
+    height: 56,
+    width: 56,
+    borderRadius: 16,
+    alignSelf: "center"
+  },
+  usernameContainer: {
+    flexDirection: "column",
+    marginLeft: 20,
+    justifyContent: "space-evenly"
+  },
+  phoneNumber: {
+    color: "#ADB5BD",
+    fontSize: 12,
+    textAlign: "left",
+    textAlignVertical: "center",
+    fontWeight: "normal",
+    fontFamily: "sans-serif"
+  }
 });
