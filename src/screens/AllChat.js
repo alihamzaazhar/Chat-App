@@ -20,21 +20,20 @@ import {
 } from "firebase/firestore";
 import { useEffect, useState } from "react";
 import { useNavigation } from "@react-navigation/native";
-import ViewStoryComponent from '../components/ViewStoryComponent'
+import ViewStoryComponent from "../components/ViewStoryComponent";
 import { FlatList } from "react-native-gesture-handler";
-const AllChat = (props) => {
+const AllChat = () => {
   const auth = getAuth(app);
   const [data, setData] = useState([]);
   const navigation = useNavigation();
   const [propsData, setPropsData] = useState(null);
   const [currentUserData, setCurrentUserData] = useState([]);
-  const [chatData, setChatData] = useState([])
+  const [chatData, setChatData] = useState([]);
 
   useEffect(() => {
     (async () => {
       try {
         let allUsersData = [];
-        let counter = 1;
         const querySnapshot = await getDocs(collection(db, "Users"));
         querySnapshot.forEach((doc) => {
           let data = [];
@@ -49,14 +48,17 @@ const AllChat = (props) => {
                 createdAt: userStatuses.createdAt,
                 postedBy: userStatuses.userID,
                 username: userStatuses.userName,
+                finish: 0
               });
             });
-            allUsersData.push({
-              username: "user " + counter,
-              statusData: data,
-            });
+            if(doc.data().mobile !== auth.currentUser.phoneNumber){
+              allUsersData.push({
+                username: doc.data().name,
+                profileImage: doc.data().profileImage,
+                statusData: data,
+              });
+            }
             setData(allUsersData);
-            counter++;
           });
         });
         // for( let i in userIDs){
@@ -82,8 +84,8 @@ const AllChat = (props) => {
     myyStatusData();
   }, []);
 
-   
   const myyStatusData = async () => {
+    const finish = 0
     const querySnapshot = await getDocs(collection(db, "Users"));
     querySnapshot.forEach((doc) => {
       if (doc.id === auth.currentUser.uid) {
@@ -104,6 +106,7 @@ const AllChat = (props) => {
               createdAt: userStatuses.createdAt,
               postedBy: userStatuses.userID,
               username: userStatuses.userName,
+              finish: finish
             });
             setCurrentUserData(mydata);
           });
@@ -111,31 +114,40 @@ const AllChat = (props) => {
       }
     });
   };
-useEffect(() => {
-  getChats()
-}, []);
-  const getChats = async() => {
-    const chatsref = await getDocs(collection(db, "Chats"))
-    chatsref.forEach((doc)=> {
-      const allData = []
-        allData.push({
-          reciever_id: doc.data().contact1_uid,
-          reciever_name: doc.data().contact1_name,
-          reciever_phoneNumber: doc.data().contact1_phoneNumber,
-          reciever_image: doc.data().contact1_avatar
-        })
-      setChatData(allData)
-    })
-  }
+  useEffect(() => {
+    getChats();
+  }, []);
+  const getChats = async () => {
+    const chatsref = await getDocs(collection(db, "Chats"));
+    chatsref.forEach((doc) => {
+      const allData = [];
+      allData.push({
+        reciever_id: doc.data().contact1_uid,
+        reciever_name: doc.data().contact1_name,
+        reciever_phoneNumber: doc.data().contact1_phoneNumber,
+        reciever_image: doc.data().contact1_avatar,
+      });
+      setChatData(allData);
+    });
+  };
 
-  const startChat = ({item}) => {
+  const startChat = ({ item }) => {
     navigation.navigate("ChatScreen", {
       username: item.reciever_name,
       profileImage: item.reciever_image,
       phoneNumber: item.reciever_phoneNumber,
-      userID: item.reciever_id
-    })
-  }
+      userID: item.reciever_id,
+    });
+  };
+
+  const sendStatus = ({ item }) => {
+    navigation.navigate("ViewStoryComponent", {
+      data: item.statusData
+    });
+  };
+
+  console.log(currentUserData)
+
   return (
     <View style={styles.SafeAreaView}>
       <View style={styles.header}>
@@ -157,7 +169,7 @@ useEffect(() => {
       </View>
       <View style={styles.container}>
         <View style={styles.storiescontainer}>
-          {currentUserData === null ? (
+          {currentUserData.length === 0 ? (
             <View style={styles.yourStoryContainer}>
               <TouchableOpacity
                 activeOpacity={0.7}
@@ -174,6 +186,13 @@ useEffect(() => {
             <View style={styles.yourStoryContainer}>
               <TouchableOpacity
                 activeOpacity={0.7}
+                onPress={() => {
+                  if (currentUserData.length > 0) {
+                    navigation.navigate("ViewStoryComponent", {
+                      data: currentUserData
+                    })
+                  }
+                }}
               >
                 <Image
                   source={{ uri: auth.currentUser.photoURL }}
@@ -185,7 +204,28 @@ useEffect(() => {
               </Text>
             </View>
           )}
-          <View style={styles.othersStoryContainer}></View>
+          <View style={styles.othersStoryContainer}>
+            <FlatList
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              data={data}
+              keyExtractor={(item, index) => {
+                return index.toString();
+              }}
+              renderItem={({ item }) => {
+                return (
+                  <View style={{ height: 58, marginTop: 15}}>
+                    <TouchableOpacity onPress={()=> {
+                       sendStatus({ item });
+                    }}>
+                    <Image source={{uri: item.profileImage}} style={styles.otherusersProfile}/>
+                    </TouchableOpacity>                   
+                    <Text style={styles.yourstoryText}>{item.username.toUpperCase()}</Text>
+                  </View>
+                );
+              }}
+            />
+          </View>
         </View>
         <View style={styles.searchBar}>
           <Image
@@ -201,26 +241,33 @@ useEffect(() => {
           />
         </View>
         <View style={styles.chatContainer}>
-          <FlatList data={chatData}
-          keyExtractor={(item, index) =>  {
-            return index.toString()
-          }}
-          renderItem = {({item, index})=> {
-            return(
-              <TouchableOpacity onPress={()=> {startChat({item})}}>
-            <View style={styles.flatlistContainer}>
-              <Image source={{uri : item.reciever_image}} style={styles.img_contacts} />
-              <View style={styles.usernameContainer}>
-              <Text style={styles.username}>
-                {item.reciever_name}
-              </Text>
-              <Text style={styles.phoneNumber}>{item.reciever_phoneNumber}</Text>
-              </View>
-            </View>
-            </TouchableOpacity>
-            )
-          }}
-          
+          <FlatList
+            data={chatData}
+            keyExtractor={(item, index) => {
+              return index.toString();
+            }}
+            renderItem={({ item, index }) => {
+              return (
+                <TouchableOpacity
+                  onPress={() => {
+                    startChat({ item });
+                  }}
+                >
+                  <View style={styles.flatlistContainer}>
+                    <Image
+                      source={{ uri: item.reciever_image }}
+                      style={styles.img_contacts}
+                    />
+                    <View style={styles.usernameContainer}>
+                      <Text style={styles.username}>{item.reciever_name}</Text>
+                      <Text style={styles.phoneNumber}>
+                        {item.reciever_phoneNumber}
+                      </Text>
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              );
+            }}
           />
         </View>
       </View>
@@ -294,6 +341,7 @@ const styles = StyleSheet.create({
     height: 60,
     width: 60,
     borderRadius: 10,
+    alignSelf: "center",
   },
   yourstoryText: {
     textAlign: "center",
@@ -310,7 +358,7 @@ const styles = StyleSheet.create({
     textAlign: "left",
     textAlignVertical: "center",
     fontWeight: "normal",
-    fontFamily: "sans-serif"
+    fontFamily: "sans-serif",
   },
   flatlistContainer: {
     flexDirection: "row",
@@ -321,12 +369,12 @@ const styles = StyleSheet.create({
     height: 56,
     width: 56,
     borderRadius: 16,
-    alignSelf: "center"
+    alignSelf: "center",
   },
   usernameContainer: {
     flexDirection: "column",
     marginLeft: 20,
-    justifyContent: "space-evenly"
+    justifyContent: "space-evenly",
   },
   phoneNumber: {
     color: "#ADB5BD",
@@ -334,6 +382,18 @@ const styles = StyleSheet.create({
     textAlign: "left",
     textAlignVertical: "center",
     fontWeight: "normal",
-    fontFamily: "sans-serif"
+    fontFamily: "sans-serif",
+  },
+  othersStoryContainer: {
+    width: "100%",
+    height: 108,
+    justifyContent: "center",
+    marginLeft: 20
+  },
+  otherusersProfile: {
+    height: 60,
+    width: 60,
+    borderRadius: 10,
+    alignSelf: "center",
   }
 });

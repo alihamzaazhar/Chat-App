@@ -27,6 +27,7 @@ const UploadStatusScreen = (props) => {
   const [video, setVideo] = useState('')
   const [uploading, setUploading] = useState(0)
   const auth = getAuth(app);
+  const [url, setUrl] = useState(null)
   const storage = getStorage(app);
 
 
@@ -38,6 +39,22 @@ const UploadStatusScreen = (props) => {
       setImage(props.route.params.imageURI)
     }
   }, []);
+
+  useEffect(() => {
+    if(url){
+      storyData()
+      navigation.navigate("BottomTab", {
+        screen: "AllChat",
+        // params: {
+        //   Caption: caption ? caption : "",
+        //   uri:props.route.params.imageURI || props.route.params.videoURI,
+        //   contentType: props.route.params.type,
+        //   userID: auth.currentUser.uid,
+        //   storyCreationTime: serverTimestamp()
+        // },
+      })
+    }
+  }, [url]);
 
 
   const uploadingContent = image || video
@@ -98,31 +115,20 @@ const UploadStatusScreen = (props) => {
       () => {
         getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
           console.log("File available at", downloadURL);
-          if(downloadURL){
-            storyData()
-            navigation.navigate("BottomTab", {
-              screen: "AllChat",
-              params: {
-                Caption: caption ? caption : "",
-                uri:props.route.params.imageURI || props.route.params.videoURI,
-                contentType: props.route.params.type,
-                userID: auth.currentUser.uid,
-                storyCreationTime: serverTimestamp()
-              },
-            })
-          }
+          setUrl(downloadURL)
           
         });
       }
     );
   };
 
+
   const storyData = async () => {
     try{
       const userRef =  doc(db, "Users", auth.currentUser.uid)
       const userStatusRef = await addDoc(collection(userRef, "statuses"), {
         caption: caption ? caption : "",
-        uri: props.route.params.imageURI || props.route.params.videoURI,
+        uri: url,
         contentType: props.route.params.type,
         userID: auth.currentUser.uid,
         userName: auth.currentUser.displayName,
