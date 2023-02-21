@@ -55,7 +55,8 @@ const PhotoComponent = () => {
   const takePicture = async () => {
     if (cameraRef) {
       try {
-        let data = await cameraRef.current.takePictureAsync();
+        const options = {quality: 0};
+        let data = await cameraRef.current.takePictureAsync(options);
         if(type === CameraType.front){
           data = await ImageManipulator.manipulateAsync(data.uri, [
             {rotate: 180},

@@ -26,8 +26,8 @@ const VideoComponent = () => {
     if (cameraRef) {
       try {
         const videoRecords = await cameraRef.current.recordAsync({
-          maxDuration: 60,
-          quality: Camera.Constants.VideoQuality["1080"],
+          maxDuration: 30,
+          quality: Camera.Constants.VideoQuality["480"],
         });
         setVideo(videoRecords.uri);
       } catch (e) {

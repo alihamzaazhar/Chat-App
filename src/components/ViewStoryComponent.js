@@ -17,9 +17,9 @@ import { Video } from 'expo-av';
 import Constants from 'expo-constants';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useNavigation } from '@react-navigation/native';
 const { width, height } = Dimensions.get('window');
 const screenRatio = height / width;
-
 export default function ViewStoryComponent(props) {
 
   // THE contentURI
@@ -81,9 +81,8 @@ export default function ViewStoryComponent(props) {
   // ]);
 
   const data = props.route.params.data
-  console.log(data)
   const [usercontentURI, setUsercontentURI] = useState(data)
-
+  const navigation = useNavigation()
   // for get the duration
   const [end, setEnd] = useState(0);
   // current is for get the current contentURI is now playing
@@ -134,7 +133,7 @@ export default function ViewStoryComponent(props) {
     if (current !== usercontentURI.length - 1) {
       let data = [...usercontentURI];
       data[current].finish = 1;
-      setUsercontentURI(data);
+      setUsercontentURI(data, ...usercontentURI);
       setCurrent(current + 1);
       progress.setValue(0);
       setLoad(false);
@@ -150,7 +149,7 @@ export default function ViewStoryComponent(props) {
     if (current - 1 >= 0) {
       let data = [...usercontentURI];
       data[current].finish = 0;
-      setUsercontentURI(data);
+      setUsercontentURI(data, ...usercontentURI);
       setCurrent(current - 1);
       progress.setValue(0);
       setLoad(false);
@@ -161,18 +160,19 @@ export default function ViewStoryComponent(props) {
   }
 
   // closing the modal set the animation progress to 0
-  // function close() {
-  //   progress.setValue(0);
-  //   setLoad(false);
-  //   console.log('close icon pressed');
-  // }
+  function close() {
+    progress.setValue(0);
+    setLoad(false);
+    navigation.goBack();
+    setUsercontentURI("")
+  }
 
   return (
     <View style={styles.containerModal}>
     <StatusBar backgroundColor="black" barStyle="light-contentURI" />
       <View style={styles.backgroundContainer}>
         {/* check the contentURI type is video or an image */}
-        {usercontentURI[current].ContentTYPE == 'video' ? (
+        {usercontentURI[current].ContentTYPE === 'video' ? (
           <Video
             source={{
               uri: usercontentURI[current].ContentURI,
@@ -200,7 +200,7 @@ export default function ViewStoryComponent(props) {
             source={{
               uri: usercontentURI[current].ContentURI,
             }}
-            style={{ width: width, height: height }}
+            style={{ width: width , height: height, resizeMode: "cover"}}
           />
         )}
       </View>
@@ -223,7 +223,7 @@ export default function ViewStoryComponent(props) {
         <View
           style={{
             flexDirection: 'row',
-            paddingTop: 5,
+            paddingTop: 50,
             paddingHorizontal: 10,
           }}>
           {usercontentURI.map((index, key) => {
@@ -232,7 +232,7 @@ export default function ViewStoryComponent(props) {
               <View
                 key={key}
                 style={{
-                  height: 20,
+                  height: 2,
                   flex: 1,
                   flexDirection: 'row',
                   backgroundColor: 'rgba(117, 117, 117, 0.5)',
@@ -242,8 +242,8 @@ export default function ViewStoryComponent(props) {
                 <Animated.View
                   style={{
                     flex: current == key ? progress : usercontentURI[key].finish,
-                    height: 5,
-                    backgroundColor: 'yellow',
+                    height: 2,
+                    backgroundColor: 'rgba(255, 255, 255, 1)',
                   }}
                 />
               </View>
@@ -256,8 +256,7 @@ export default function ViewStoryComponent(props) {
           style={{
             height: 50,
             flexDirection: 'row',
-
-            justifycontentURI: 'space-between',
+            justifyContent: "space-between",
             paddingHorizontal: 15,
           }}>
           {/* THE AVATAR AND USERNAME  */}
@@ -280,20 +279,20 @@ export default function ViewStoryComponent(props) {
           </View>
           {/* END OF THE AVATAR AND USERNAME */}
           {/* THE CLOSE BUTTON */}
-          {/* <TouchableOpacity
+          <TouchableOpacity
             onPress={() => {
               close();
             }}>
             <View
               style={{
                 alignItems: 'center',
-                justifycontentURI: 'center',
+                justifyContent: 'center',
                 height: 50,
                 paddingHorizontal: 15,
               }}>
               <Ionicons name="ios-close" size={28} color="white" />
             </View>
-          </TouchableOpacity> */}
+          </TouchableOpacity>
           {/* END OF CLOSE BUTTON */}
         </View>
         {/* HERE IS THE HANDLE FOR PREVIOUS AND NEXT PRESS */}
@@ -314,10 +313,10 @@ export default function ViewStoryComponent(props) {
 const styles = StyleSheet.create({
   containerModal: {
     flex: 1,
+    backgroundColor: '#000',
   },
   backgroundContainer: {
     position: 'absolute',
-
     top: 0,
     bottom: 0,
     left: 0,

@@ -146,7 +146,6 @@ const AllChat = () => {
     });
   };
 
-  console.log(currentUserData)
 
   return (
     <View style={styles.SafeAreaView}>
