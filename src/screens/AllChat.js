@@ -142,7 +142,9 @@ const AllChat = () => {
 
   const sendStatus = ({ item }) => {
     navigation.navigate("ViewStoryComponent", {
-      data: item.statusData
+      data: item.statusData,
+      username: item.username,
+      profileImage: item.profileImage
     });
   };
 

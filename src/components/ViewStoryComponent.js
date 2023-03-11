@@ -82,6 +82,7 @@ export default function ViewStoryComponent(props) {
 
   const data = props.route.params.data
   const [usercontentURI, setUsercontentURI] = useState(data)
+  console.log(usercontentURI)
   const navigation = useNavigation()
   // for get the duration
   const [end, setEnd] = useState(0);
@@ -184,10 +185,10 @@ export default function ViewStoryComponent(props) {
             positionMillis={0}
             onReadyForDisplay={play()}
             onPlaybackStatusUpdate={AVPlaybackStatus => {
-              console.log(AVPlaybackStatus);
+              // console.log(AVPlaybackStatus);
               setLoad(AVPlaybackStatus.isLoaded);
               setEnd(AVPlaybackStatus.durationMillis);
-              console.log(usercontentURI[current].ContentURI)
+              // console.log(usercontentURI[current].ContentURI)
             }}
             style={{ height: height, width: width }}
           />
@@ -264,8 +265,7 @@ export default function ViewStoryComponent(props) {
             <Image
               style={{ height: 30, width: 30, borderRadius: 25 }}
               source={{
-                uri:
-                  'https://firebasestorage.googleapis.com/v0/b/instagram-clone-f3106.appspot.com/o/ylKTg2Mg_400x400.jpg?alt=media&token=fb4661aa-3a62-4af7-9051-86e5485ea36f',
+                uri: props.route.params.profileImage
               }}
             />
             <Text
@@ -274,7 +274,7 @@ export default function ViewStoryComponent(props) {
                 color: 'white',
                 paddingLeft: 10,
               }}>
-              kikidding
+              {props.route.params.username}
             </Text>
           </View>
           {/* END OF THE AVATAR AND USERNAME */}
